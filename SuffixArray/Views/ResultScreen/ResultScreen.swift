@@ -1,26 +1,26 @@
 //
-//  SegmentControlView.swift
+//  ResultScreen.swift
 //  SuffixArray
 //
 //  Created by Elizaveta on 19.12.2024.
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 struct ResultScreen: View {
     @StateObject var presenter: ResultScreenPresenter
     @State private var selectedOption = 0
     @State private var searchText = ""
     @State private var filteredResults: [String] = []
-    
+
     @State private var searchCancellable: AnyCancellable?
     private var searchSubject = PassthroughSubject<String, Never>()
-    
+
     init(presenter: ResultScreenPresenter) {
         _presenter = StateObject(wrappedValue: presenter)
     }
-    
+
     var body: some View {
         VStack {
             ScrollView {
@@ -31,7 +31,7 @@ struct ResultScreen: View {
                     .multilineTextAlignment(.leading)
             }
             .frame(height: 250)
-            
+
             Picker("Options", selection: $selectedOption) {
                 Text("Ascending").tag(0)
                 Text("Descending").tag(1)
@@ -41,7 +41,7 @@ struct ResultScreen: View {
             .onChange(of: selectedOption) { _, _ in
                 updateFilteredResults(with: searchText)
             }
-            
+
             TextField("Search suffixes", text: $searchText)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding([.leading, .trailing])
@@ -49,7 +49,7 @@ struct ResultScreen: View {
                     print("TextField updated: \(newValue)")
                     searchSubject.send(newValue)
                 }
-            
+
             List {
                 ForEach(filteredResults, id: \.self) { suffix in
                     HStack {
@@ -67,16 +67,15 @@ struct ResultScreen: View {
             setupSearchSubscriber()
         }
     }
-    
+
     private func setupSearchSubscriber() {
-        print("Setup")
         searchCancellable = searchSubject
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .sink { value in
-                self.updateFilteredResults(with: value)
+                updateFilteredResults(with: value)
             }
     }
-    
+
     private func updateFilteredResults(with query: String = "") {
         let suffixes: [String]
         switch selectedOption {
@@ -89,15 +88,24 @@ struct ResultScreen: View {
         default:
             suffixes = []
         }
-        
+
         filteredResults = query.trimmingCharacters(in: .whitespaces).isEmpty
             ? suffixes
             : suffixes.filter { $0.localizedCaseInsensitiveContains(query) }
-
-        print("Filtered Results: \(filteredResults)")
     }
 }
 
 #Preview {
-    ResultScreen(presenter: ResultScreenPresenter(text: "A string is a series of characters, such as Swift, that forms a collection. Strings in Swift are Unicode correct and locale insensitive, and are designed to be efficient. The String type bridges with the Objective-C class NSString and offers interoperability with C functions that works with strings. You can create new strings using string literals or string interpolations. A string literal is a series of characters enclosed in quotes."))
+    ResultScreen(
+        presenter: ResultScreenPresenter(
+            text: """
+            A string is a series of characters, such as Swift, that forms a collection. 
+            Strings in Swift are Unicode correct and locale insensitive, and are designed 
+            to be efficient. The String type bridges with the Objective-C class NSString
+            and offers interoperability with C functions that works with strings. You can create
+            new strings using string literals or string interpolations. A string l
+            iteral is a series of characters enclosed in quotes.
+            """
+        )
+    )
 }

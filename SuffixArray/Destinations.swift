@@ -1,5 +1,5 @@
 //
-//  ResultDestination.swift
+//  Destinations.swift
 //  SuffixArray
 //
 //  Created by Elizaveta on 20.12.2024.

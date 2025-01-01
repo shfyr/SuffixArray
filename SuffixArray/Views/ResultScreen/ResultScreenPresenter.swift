@@ -8,17 +8,17 @@ import SwiftUI
 
 class ResultScreenPresenter: ObservableObject {
     @Published var text: String
-    
+
     init(text: String) {
         self.text = text
     }
-    
+
     var allSuffixes: [String] {
         getAllWords(text: text)
             .map { SuffixSequence(text: $0).getSuffixes() }
             .flatMap { $0 }
     }
-    
+
     func getTopTen() -> [(String, Int)] {
         allSuffixes
             .filter { $0.count == 3 }
@@ -32,8 +32,7 @@ class ResultScreenPresenter: ObservableObject {
             .prefix(10)
             .map { $0 }
     }
-    
-    
+
     func getAllWords(text: String) -> [String] {
         text.split(separator: " ")
             .map { String($0) }

@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct TextFieldScreen: View {
-    @State private var word: String = ""
+    @State private var word = ""
     @Binding var path: [Destinations]
-    
+
     var body: some View {
         VStack(alignment: .center) {
             HStack(alignment: .center, spacing: 3) {
@@ -30,11 +30,12 @@ struct TextFieldScreen: View {
                     .font(.largeTitle)
                 }
                 .frame(height: 70)
-                
+
                 Button {
                     path.append(
                         .result(
-                            destination: ResultDestination(word: word))
+                            destination: ResultDestination(word: word)
+                        )
                     )
                 } label: {
                     Image(systemName: "arrow.right")
@@ -52,7 +53,6 @@ struct TextFieldScreen: View {
         .navigationTitle("Find all Suffixes")
     }
 }
-
 
 #Preview {
     @Previewable @State var previewPath: [Destinations] = [.result(destination: ResultDestination(word: "PreviewWord"))]

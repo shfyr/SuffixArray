@@ -10,14 +10,14 @@ import SwiftUI
 @main
 struct SuffixArrayApp: App {
     @State private var path: [Destinations] = []
-    
+
     var body: some Scene {
         WindowGroup {
             NavigationStack(path: $path) {
                 TextFieldScreen(path: $path)
                     .navigationDestination(for: Destinations.self) { destination in
                         switch destination {
-                        case .result(let resultDestination):
+                        case let .result(resultDestination):
                             ResultScreen(presenter: ResultScreenPresenter(text: resultDestination.word))
                         }
                     }
