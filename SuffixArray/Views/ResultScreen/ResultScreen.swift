@@ -6,78 +6,95 @@
 //
 
 import SwiftUI
+import Combine
 
 struct ResultScreen: View {
     @StateObject var presenter: ResultScreenPresenter
     @State private var selectedOption = 0
     @State private var searchText = ""
+    @State private var filteredResults: [String] = []
     
-    var body: some View {
-  
-            VStack {
-                ScrollView {
-                    Text("Text: \(presenter.text)")
-                        .font(.title)
-                        .padding()
-                        .lineLimit(nil)
-                        .multilineTextAlignment(.leading)
-//                        .background(.mint)
-                }
-                .frame(height: 250)
-                
-                Picker("Options", selection: $selectedOption) {
-                    Text("Ascending").tag(0)
-                    Text("Descending").tag(1)
-                    Text("Top 10").tag(2)
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                
-                TextField("Search Suffixes", text: $searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .font(.largeTitle)
-                    .padding([.leading, .trailing])
-                List {
-                    select(option: selectedOption)
-                }
-            }
-        .navigationTitle("Result")
+    @State private var searchCancellable: AnyCancellable?
+    private var searchSubject = PassthroughSubject<String, Never>()
+    
+    init(presenter: ResultScreenPresenter) {
+        _presenter = StateObject(wrappedValue: presenter)
     }
     
-    @ViewBuilder
-    func select(option: Int) -> some View {
-        switch option {
-        case 0:
-        ForEach(presenter.allSuffixes.sorted(), id: \.self) { suffix in
-                HStack {
-                    Text(suffix)
-                        .multilineTextAlignment(.leading)
-                    Spacer()
-                    Text(String(presenter.allSuffixes.frequency[suffix] ?? 1))
-                }
+    var body: some View {
+        VStack {
+            ScrollView {
+                Text("Text: \(presenter.text)")
+                    .font(.title)
+                    .padding()
+                    .lineLimit(nil)
+                    .multilineTextAlignment(.leading)
             }
-        case 1:
-            ForEach(presenter.allSuffixes.sorted(by: >), id: \.self) { suffix in
-                HStack {
-                    Text(suffix)
-                        .multilineTextAlignment(.leading)
-                    Spacer()
-                    Text(String(presenter.allSuffixes.frequency[suffix] ?? 1))
-                }
+            .frame(height: 250)
+            
+            Picker("Options", selection: $selectedOption) {
+                Text("Ascending").tag(0)
+                Text("Descending").tag(1)
+                Text("Top 10").tag(2)
             }
-        case 2:
-            ForEach(
-                presenter.getTopTen(),
-                id: \.0) { suffix in
+            .pickerStyle(SegmentedPickerStyle())
+            .onChange(of: selectedOption) { _, _ in
+                updateFilteredResults(with: searchText)
+            }
+            
+            TextField("Search suffixes", text: $searchText)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding([.leading, .trailing])
+                .onChange(of: searchText) { newValue, _ in
+                    print("TextField updated: \(newValue)")
+                    searchSubject.send(newValue)
+                }
+            
+            List {
+                ForEach(filteredResults, id: \.self) { suffix in
                     HStack {
-                        Text(suffix.0)
+                        Text(suffix)
                             .multilineTextAlignment(.leading)
                         Spacer()
-                        Text("\(suffix.1)")
+                        Text(String(presenter.allSuffixes.frequency[suffix] ?? 1))
                     }
                 }
-        default:
-            Text("Invalid option")
+            }
         }
+        .navigationTitle("Result")
+        .onAppear {
+            updateFilteredResults() // Initialize filtered results
+            setupSearchSubscriber()
+        }
+    }
+    
+    private func setupSearchSubscriber() {
+        print("Setup")
+        searchCancellable = searchSubject
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { value in
+                self.updateFilteredResults(with: value)
+            }
+    }
+    
+    private func updateFilteredResults(with query: String = "") {
+        let suffixes: [String]
+        switch selectedOption {
+        case 0:
+            suffixes = presenter.allSuffixes.sorted()
+        case 1:
+            suffixes = presenter.allSuffixes.sorted(by: >)
+        case 2:
+            suffixes = presenter.getTopTen().map { $0.0 }
+        default:
+            suffixes = []
+        }
+        
+        filteredResults = query.trimmingCharacters(in: .whitespaces).isEmpty
+            ? suffixes
+            : suffixes.filter { $0.localizedCaseInsensitiveContains(query) }
+
+        print("Filtered Results: \(filteredResults)")
     }
 }
 
